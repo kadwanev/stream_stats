@@ -7,6 +7,7 @@ VALUE timer_class;
 
 static void strstat_timer_free(void *ptr) {
   destroy_timer(ptr);
+  free(ptr);
 }
 
 static VALUE strstat_timer_init(VALUE self, VALUE rb_eps, VALUE rb_quantiles) {
@@ -37,19 +38,24 @@ static VALUE strstat_timer_init(VALUE self, VALUE rb_eps, VALUE rb_quantiles) {
   init_timer(eps, quantiles, num_quantiles, i_timer);
 
   VALUE data = Data_Wrap_Struct(timer_class, NULL, strstat_timer_free, i_timer);
-  rb_ivar_set(self, rb_intern("timer"), data);
+  rb_ivar_set(self, rb_intern("internal_struct"), data);
 
   return Qnil;
+}
+
+static void *strstat_get_struct(VALUE self) {
+  void *ptr;
+
+  VALUE data = rb_ivar_get(self, rb_intern("internal_struct"));
+  Data_Get_Struct(data, timer, ptr);
+  return ptr;
 }
 
 static VALUE strstat_timer_add_sample(VALUE self, VALUE rb_sample) {
 
   double sample = NUM2DBL(rb_sample);
 
-  timer *i_timer;
-
-  VALUE data = rb_ivar_get(self, rb_intern("timer"));
-  Data_Get_Struct(data, timer, i_timer);
+  timer *i_timer = (timer*) strstat_get_struct(self);
 
   int returned = timer_add_sample(i_timer, sample);
   if (returned != 0) {
@@ -60,10 +66,7 @@ static VALUE strstat_timer_add_sample(VALUE self, VALUE rb_sample) {
 }
 
 static VALUE strstat_timer_count(VALUE self) {
-  timer *i_timer;
-
-  VALUE data = rb_ivar_get(self, rb_intern("timer"));
-  Data_Get_Struct(data, timer, i_timer);
+  timer *i_timer = (timer*) strstat_get_struct(self);
 
   return LONG2NUM(timer_count(i_timer));
 }
@@ -73,10 +76,7 @@ static VALUE strstat_timer_query(VALUE self, VALUE rb_query) {
   if (query < 0 || query > 1)
     rb_raise(rb_eRuntimeError, "invalid quantile");
 
-  timer *i_timer;
-
-  VALUE data = rb_ivar_get(self, rb_intern("timer"));
-  Data_Get_Struct(data, timer, i_timer);
+  timer *i_timer = (timer*) strstat_get_struct(self);
   return DBL2NUM(timer_query(i_timer, query));
 }
 
@@ -89,10 +89,7 @@ static VALUE strstat_timer_percentile(VALUE self, VALUE rb_percentile) {
 }
 
 static VALUE strstat_timer_commoncall(VALUE self, double(*func)(timer*)) {
-  timer *i_timer;
-
-  VALUE data = rb_ivar_get(self, rb_intern("timer"));
-  Data_Get_Struct(data, timer, i_timer);
+  timer *i_timer = (timer*) strstat_get_struct(self);
   return DBL2NUM((*func)(i_timer));
 }
 
@@ -115,6 +112,8 @@ static VALUE strstat_timer_squared_sum(VALUE self) {
   return strstat_timer_commoncall(self, timer_squared_sum);
 }
 
+extern void Init_stream_stats_counter(void);
+
 void Init_stream_stats(void) {
   VALUE module = rb_define_module("StreamStats");
 
@@ -132,4 +131,5 @@ void Init_stream_stats(void) {
   rb_define_method(timer_class, "sum", strstat_timer_sum, 0);
   rb_define_method(timer_class, "squared_sum", strstat_timer_squared_sum, 0);
 
+  Init_stream_stats_counter();
 }
