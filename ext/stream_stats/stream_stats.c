@@ -19,6 +19,7 @@ static VALUE strstat_timer_init(VALUE self, VALUE rb_eps, VALUE rb_quantiles) {
 
   switch (TYPE(rb_quantiles)) {
     case T_ARRAY:
+      rb_iv_set(self, "@quantiles", rb_quantiles);
       num_quantiles = RARRAY_LEN(rb_quantiles);
       if (num_quantiles < 1)
         rb_raise(rb_eRuntimeError, "no quantiles defined");
