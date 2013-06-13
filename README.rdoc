@@ -1,0 +1,43 @@
+= StreamStats
+
+Extract statistics from long streams of data with minimal space usage and guaranteed precision.
+
+== Install
+
+Add to Gemfile or gem install and require
+
+  gem 'stream_stats'
+  require 'stream_stats'
+
+== Usage
+
+Create stream and add values
+
+  stream = StreamStats::Stream.new(0.001, [0.50, 0.90])
+
+Parameters:
+  precision level
+  array of quantiles for guaranteed precision
+
+The above example guarantees that the 50% and 90% percentile results are guaranteed accurage to +/- 0.001.
+
+Populate stream with samples:
+
+  (0..20).each do |i| stream << i end
+
+Get stream result whenever desired:
+
+  count       - count of stream entries
+  quantile    - query value at quantile
+  percentile  - query value at percentile
+  min         - query min value
+  max         - query max value
+  mean        - query mean
+  stddev      - query standard deviation of stream entries
+  sum         - query sum of stream entries
+  squared_sum - query squared sum of stream entries
+
+=== Credit
+
+Complete credit goes to Armon Dadgar. Algorithm code copied directly out of [statsite](https://github.com/armon/statsite)
+
