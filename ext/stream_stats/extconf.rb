@@ -1,6 +1,5 @@
 require 'mkmf'
 
-have_header('ruby.h') or missing('ruby.h')
 $CFLAGS += ' ' unless $CFLAGS.empty?
 $CFLAGS += '-std=c99'
 
