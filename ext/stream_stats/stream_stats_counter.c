@@ -6,12 +6,14 @@
 VALUE counter_class;
 
 static VALUE strstat_counter_init(VALUE self) {
+  counter *i_counter;
+  VALUE data;
 
-  counter *i_counter = (counter *) malloc(sizeof(counter));
+  i_counter = (counter *) malloc(sizeof(counter));
 
   init_counter(i_counter);
 
-  VALUE data = Data_Wrap_Struct(counter_class, NULL, free, i_counter);
+  data = Data_Wrap_Struct(counter_class, NULL, free, i_counter);
   rb_ivar_set(self, rb_intern("internal_struct"), data);
 
   return Qnil;
@@ -19,19 +21,23 @@ static VALUE strstat_counter_init(VALUE self) {
 
 static void *strstat_get_struct(VALUE self) {
   void *ptr;
+  VALUE data;
 
-  VALUE data = rb_ivar_get(self, rb_intern("internal_struct"));
+  data = rb_ivar_get(self, rb_intern("internal_struct"));
   Data_Get_Struct(data, counter, ptr);
   return ptr;
 }
 
 static VALUE strstat_counter_add_sample(VALUE self, VALUE rb_sample) {
+  double sample;
+  counter *i_counter;
+  int returned;
 
-  double sample = NUM2DBL(rb_sample);
+  sample = NUM2DBL(rb_sample);
 
-  counter *i_counter = (counter*) strstat_get_struct(self);
+  i_counter = (counter*) strstat_get_struct(self);
 
-  int returned = counter_add_sample(i_counter, sample);
+  returned = counter_add_sample(i_counter, sample);
   if (returned != 0) {
     rb_raise(rb_eRuntimeError, "add sample returned %d", returned);
   }
@@ -40,13 +46,17 @@ static VALUE strstat_counter_add_sample(VALUE self, VALUE rb_sample) {
 }
 
 static VALUE strstat_counter_count(VALUE self) {
-  counter *i_counter = (counter*) strstat_get_struct(self);
+  counter *i_counter;
+
+  i_counter = (counter*) strstat_get_struct(self);
 
   return LONG2NUM(counter_count(i_counter));
 }
 
 static VALUE strstat_counter_commoncall(VALUE self, double(*func)(counter*)) {
-  counter *i_counter = (counter*) strstat_get_struct(self);
+  counter *i_counter;
+
+  i_counter = (counter*) strstat_get_struct(self);
   return DBL2NUM((*func)(i_counter));
 }
 
@@ -70,7 +80,9 @@ static VALUE strstat_counter_squared_sum(VALUE self) {
 }
 
 void Init_stream_stats_counter(void) {
-  VALUE module = rb_define_module("StreamStats");
+  VALUE module;
+
+  module = rb_define_module("StreamStats");
 
   counter_class = rb_define_class_under(module, "Counter", rb_cObject);
 
