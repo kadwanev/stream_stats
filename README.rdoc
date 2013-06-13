@@ -11,6 +11,8 @@ Add to Gemfile or gem install and require
 
 == Usage
 
+=== Stream Quantile Processing
+
 Create stream and add values
 
   stream = StreamStats::Stream.new(0.001, [0.50, 0.90])
@@ -38,6 +40,29 @@ Get stream result whenever desired:
   stddev      - query standard deviation of stream entries
   sum         - query sum of stream entries
   squared_sum - query squared sum of stream entries
+
+=== Stream Counting
+
+Create counter and add values
+
+  counter = StreamStats::Counter.new
+
+Populate counter with samples:
+
+  (0..20).each do |i| 
+    counter << i 
+  end
+
+Get stream result whenever desired:
+
+  count       - count of stream entries
+  min         - query min value
+  max         - query max value
+  mean        - query mean
+  stddev      - query standard deviation of stream entries
+  sum         - query sum of stream entries
+  squared_sum - query squared sum of stream entries
+
 
 === Credit
 
