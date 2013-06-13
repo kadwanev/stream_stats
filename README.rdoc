@@ -1,4 +1,5 @@
 = StreamStats
+{<img src="https://travis-ci.org/kadwanev/stream_stats.png" />}[https://travis-ci.org/kadwanev/stream_stats]
 
 Extract statistics from long streams of data with minimal space usage and guaranteed precision.
 
