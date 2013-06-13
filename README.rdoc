@@ -16,14 +16,16 @@ Create stream and add values
   stream = StreamStats::Stream.new(0.001, [0.50, 0.90])
 
 Parameters:
-  precision level
-  array of quantiles for guaranteed precision
+  1) precision level   
+  2) array of quantiles for guaranteed precision   
 
-The above example guarantees that the 50% and 90% percentile results are guaranteed accurage to +/- 0.001.
+The above example guarantees that the 50% and 90% percentile results are accurate to +/- 0.001.
 
 Populate stream with samples:
 
-  (0..20).each do |i| stream << i end
+  (0..20).each do |i| 
+    stream << i 
+  end
 
 Get stream result whenever desired:
 
@@ -39,5 +41,6 @@ Get stream result whenever desired:
 
 === Credit
 
-Complete credit goes to Armon Dadgar. Algorithm code copied directly out of [statsite](https://github.com/armon/statsite)
+Complete credit goes to Armon Dadgar.  
+Algorithm code copied directly out of [statsite](http://github.com/armon/statsite)
 
