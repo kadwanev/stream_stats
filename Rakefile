@@ -35,6 +35,9 @@ CLEAN.include('ext/**/Makefile')
 CLEAN.include("lib/#{NAME}/#{NAME}.#{RbConfig::CONFIG['DLEXT']}")
 CLOBBER.include("lib/**/*.#{RbConfig::CONFIG['DLEXT']}")
 
+task :build => [:clean] do
+  exec 'gem build stream_stats.gemspec'
+end
 
 Rake::TestTask.new(:test) do |t|
   t.libs << 'lib'
