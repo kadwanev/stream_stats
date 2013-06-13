@@ -1,18 +1,17 @@
 #include <ruby.h>
 #include <stdio.h>
 
-#include "cm_quantile.h"
+#include "timer.h"
 
-VALUE quantile_class;
+VALUE timer_class;
 
-static void strstat_quantile_free(void *ptr) {
-  destroy_cm_quantile(ptr);
+static void strstat_timer_free(void *ptr) {
+  destroy_timer(ptr);
 }
 
-static VALUE strstat_quantile_init(self, rb_eps, rb_quantiles)
-  VALUE self, rb_eps, rb_quantiles; {
+static VALUE strstat_timer_init(VALUE self, VALUE rb_eps, VALUE rb_quantiles) {
 
-  cm_quantile *newQuantile = (cm_quantile *) malloc(sizeof(cm_quantile));
+  timer *i_timer = (timer *) malloc(sizeof(timer));
 
   double eps = NUM2DBL(rb_eps);
   double *quantiles;
@@ -32,24 +31,24 @@ static VALUE strstat_quantile_init(self, rb_eps, rb_quantiles)
       break;
   }
 
-  init_cm_quantile(eps, quantiles, num_quantiles, newQuantile);
+  init_timer(eps, quantiles, num_quantiles, i_timer);
 
-  VALUE data = Data_Wrap_Struct(quantile_class, NULL, strstat_quantile_free, newQuantile);
-  rb_ivar_set(self, rb_intern("quantile"), data);
+  VALUE data = Data_Wrap_Struct(timer_class, NULL, strstat_timer_free, i_timer);
+  rb_ivar_set(self, rb_intern("timer"), data);
 
   return Qnil;
 }
 
-static VALUE strstat_quantile_add_sample(VALUE self, VALUE rb_sample) {
+static VALUE strstat_timer_add_sample(VALUE self, VALUE rb_sample) {
 
   double sample = NUM2DBL(rb_sample);
 
-  cm_quantile *quantile;
+  timer *i_timer;
 
-  VALUE data = rb_ivar_get(self, rb_intern("quantile"));
-  Data_Get_Struct(data, cm_quantile, quantile);
+  VALUE data = rb_ivar_get(self, rb_intern("timer"));
+  Data_Get_Struct(data, timer, i_timer);
 
-  int returned = cm_add_sample(quantile, sample);
+  int returned = timer_add_sample(i_timer, sample);
   if (returned != 0) {
     rb_raise(rb_eRuntimeError, "add sample returned %d", returned);
   }
@@ -57,36 +56,66 @@ static VALUE strstat_quantile_add_sample(VALUE self, VALUE rb_sample) {
   return Qnil;
 }
 
-static VALUE strstat_quantile_flush(VALUE self) {
-  cm_quantile *quantile;
+static VALUE strstat_timer_count(VALUE self) {
+  timer *i_timer;
 
-  VALUE data = rb_ivar_get(self, rb_intern("quantile"));
-  Data_Get_Struct(data, cm_quantile, quantile);
-  int returned = cm_flush(quantile);
-  if (returned != 0) {
-    rb_raise(rb_eRuntimeError, "flush returned %d", returned);
-  }
+  VALUE data = rb_ivar_get(self, rb_intern("timer"));
+  Data_Get_Struct(data, timer, i_timer);
 
-  return Qnil;
+  return LONG2NUM(timer_count(i_timer));
 }
 
-static VALUE strstat_quantile_query(VALUE self, VALUE rb_query) {
+static VALUE strstat_timer_query(VALUE self, VALUE rb_query) {
   double query = NUM2DBL(rb_query);
 
-  cm_quantile *quantile;
+  timer *i_timer;
 
-  VALUE data = rb_ivar_get(self, rb_intern("quantile"));
-  Data_Get_Struct(data, cm_quantile, quantile);
-  return DBL2NUM(cm_query(quantile, query));
+  VALUE data = rb_ivar_get(self, rb_intern("timer"));
+  Data_Get_Struct(data, timer, i_timer);
+  return DBL2NUM(timer_query(i_timer, query));
+}
+
+static VALUE strstat_timer_commoncall(VALUE self, double(*func)(timer*)) {
+  timer *i_timer;
+
+  VALUE data = rb_ivar_get(self, rb_intern("timer"));
+  Data_Get_Struct(data, timer, i_timer);
+  return DBL2NUM((*func)(i_timer));
+}
+
+static VALUE strstat_timer_min(VALUE self) {
+  return strstat_timer_commoncall(self, timer_min);
+}
+static VALUE strstat_timer_max(VALUE self) {
+  return strstat_timer_commoncall(self, timer_max);
+}
+static VALUE strstat_timer_mean(VALUE self) {
+  return strstat_timer_commoncall(self, timer_mean);
+}
+static VALUE strstat_timer_stddev(VALUE self) {
+  return strstat_timer_commoncall(self, timer_stddev);
+}
+static VALUE strstat_timer_sum(VALUE self) {
+  return strstat_timer_commoncall(self, timer_sum);
+}
+static VALUE strstat_timer_squared_sum(VALUE self) {
+  return strstat_timer_commoncall(self, timer_squared_sum);
 }
 
 void Init_stream_stats(void) {
   VALUE module = rb_define_module("StreamStats");
 
-  quantile_class = rb_define_class_under(module, "CMQuantile", rb_cObject);
+  timer_class = rb_define_class_under(module, "Timer", rb_cObject);
 
-  rb_define_method(quantile_class, "initialize", strstat_quantile_init, 2);
-  rb_define_method(quantile_class, "add_sample", strstat_quantile_add_sample, 1);
-  rb_define_method(quantile_class, "flush", strstat_quantile_flush, 0);
-  rb_define_method(quantile_class, "query", strstat_quantile_query, 1);
+  rb_define_method(timer_class, "initialize", strstat_timer_init, 2);
+  rb_define_method(timer_class, "add_sample", strstat_timer_add_sample, 1);
+  rb_define_method(timer_class, "count", strstat_timer_count, 0);
+  rb_define_method(timer_class, "query", strstat_timer_query, 1);
+  rb_define_method(timer_class, "min", strstat_timer_min, 0);
+  rb_define_method(timer_class, "max", strstat_timer_max, 0);
+  rb_define_method(timer_class, "mean", strstat_timer_mean, 0);
+  rb_define_method(timer_class, "stddev", strstat_timer_stddev, 0);
+  rb_define_method(timer_class, "sum", strstat_timer_sum, 0);
+  rb_define_method(timer_class, "squared_sum", strstat_timer_squared_sum, 0);
+
 }
