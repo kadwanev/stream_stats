@@ -20,6 +20,8 @@ static VALUE strstat_timer_init(VALUE self, VALUE rb_eps, VALUE rb_quantiles) {
   switch (TYPE(rb_quantiles)) {
     case T_ARRAY:
       num_quantiles = RARRAY_LEN(rb_quantiles);
+      if (num_quantiles < 1)
+        rb_raise(rb_eRuntimeError, "no quantiles defined");
       quantiles = malloc(sizeof(double) * num_quantiles);
       for (int i = 0; i < num_quantiles; i++) {
         quantiles[i] = NUM2DBL(rb_ary_entry(rb_quantiles, i));
@@ -67,12 +69,22 @@ static VALUE strstat_timer_count(VALUE self) {
 
 static VALUE strstat_timer_query(VALUE self, VALUE rb_query) {
   double query = NUM2DBL(rb_query);
+  if (query < 0 || query > 1)
+    rb_raise(rb_eRuntimeError, "invalid quantile");
 
   timer *i_timer;
 
   VALUE data = rb_ivar_get(self, rb_intern("timer"));
   Data_Get_Struct(data, timer, i_timer);
   return DBL2NUM(timer_query(i_timer, query));
+}
+
+static VALUE strstat_timer_percentile(VALUE self, VALUE rb_percentile) {
+  int percentile = NUM2INT(rb_percentile);
+  if (percentile < 0 || percentile > 100)
+    rb_raise(rb_eRuntimeError, "invalid percentile");
+
+  return strstat_timer_query(self, DBL2NUM(percentile / 100.0));
 }
 
 static VALUE strstat_timer_commoncall(VALUE self, double(*func)(timer*)) {
@@ -105,12 +117,13 @@ static VALUE strstat_timer_squared_sum(VALUE self) {
 void Init_stream_stats(void) {
   VALUE module = rb_define_module("StreamStats");
 
-  timer_class = rb_define_class_under(module, "Timer", rb_cObject);
+  timer_class = rb_define_class_under(module, "Stream", rb_cObject);
 
   rb_define_method(timer_class, "initialize", strstat_timer_init, 2);
-  rb_define_method(timer_class, "add_sample", strstat_timer_add_sample, 1);
+  rb_define_method(timer_class, "<<", strstat_timer_add_sample, 1);
   rb_define_method(timer_class, "count", strstat_timer_count, 0);
-  rb_define_method(timer_class, "query", strstat_timer_query, 1);
+  rb_define_method(timer_class, "quantile", strstat_timer_query, 1);
+  rb_define_method(timer_class, "percentile", strstat_timer_percentile, 1);
   rb_define_method(timer_class, "min", strstat_timer_min, 0);
   rb_define_method(timer_class, "max", strstat_timer_max, 0);
   rb_define_method(timer_class, "mean", strstat_timer_mean, 0);
