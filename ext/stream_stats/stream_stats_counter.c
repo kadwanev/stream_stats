@@ -11,7 +11,8 @@ static VALUE strstat_counter_init(VALUE self) {
 
   i_counter = (counter *) malloc(sizeof(counter));
 
-  init_counter(i_counter);
+  if (init_counter(i_counter) != 0)
+    rb_raise(rb_eArgError, "failed to initialize");
 
   data = Data_Wrap_Struct(counter_class, NULL, free, i_counter);
   rb_ivar_set(self, rb_intern("internal_struct"), data);

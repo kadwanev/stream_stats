@@ -37,7 +37,8 @@ static VALUE strstat_timer_init(VALUE self, VALUE rb_eps, VALUE rb_quantiles) {
       break;
   }
 
-  init_timer(eps, quantiles, num_quantiles, i_timer);
+  if (init_timer(eps, quantiles, num_quantiles, i_timer) != 0)
+    rb_raise(rb_eArgError, "failed to initialize");
 
   data = Data_Wrap_Struct(timer_class, NULL, strstat_timer_free, i_timer);
   rb_ivar_set(self, rb_intern("internal_struct"), data);
