@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <time.h>
+#include <sys/time.h>
 #include <stdio.h>
 #include "rate.h"
 
@@ -13,6 +13,12 @@ int init_rate(uint32_t *periods, uint32_t num_periods, rate *rate) {
 
 int destroy_rate(rate *rate) {
   return 0;
+}
+
+uint64_t current_timestamp() {
+    struct timeval te;
+    gettimeofday(&te, NULL); // get current time
+    return te.tv_sec*1000LL + te.tv_usec/1000; // caculate milliseconds
 }
 
 int rate_mark(rate *rate, uint64_t count) {
